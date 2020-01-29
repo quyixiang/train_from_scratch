@@ -3,7 +3,7 @@ import os
 import re
 import random
 from scipy.stats import bernoulli
-from matplotlib.image import imread
+from PIL import Image
 
 
 def sigmoid(z):
@@ -29,9 +29,11 @@ def load_data(coefs, scale, num_samples, num_validation):
     images_list = []
     vgg_list = []
     for img in images:
-        img_array = imread(img)[:, :, :3]
-
-        images_list.append(img_array)
+        im = Image.open(img)
+        (x, y) = im.size
+        x_s, y_s = 32, 32
+        out = np.array(im.resize((x_s, y_s), Image.ANTIALIAS))
+        images_list.append(out)
 
     image_array = np.array(images_list)
     train_image = image_array[:num_samples]
@@ -43,10 +45,6 @@ def load_data(coefs, scale, num_samples, num_validation):
 
 
 def get_next_batch(max_length, length, train_images, train_labels, test_images, test_labels, is_training=True):
-    """
-    extract next batch-images
-    Returns: batch sized BATCH
-    """
     if is_training:
         indicies = np.random.choice(max_length, length)
         next_batch = train_images[indicies]
@@ -57,6 +55,3 @@ def get_next_batch(max_length, length, train_images, train_labels, test_images, 
         next_labels = test_labels[indicies]
 
     return np.array(next_batch), np.array(next_labels)
-
-
-
