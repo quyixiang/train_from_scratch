@@ -7,29 +7,29 @@ from matplotlib.image import imread
 
 
 def sigmoid(z):
-    a = 1/(1 + np.exp(-z))
+    a = 1 / (1 + np.exp(-z))
     return a
+
 
 def load_data(coefs, scale, num_samples, num_validation):
     images = [os.path.join("images", path) for path in os.listdir("images/")]
     images = list(filter(lambda ima: re.match("images/.*?.jpg", ima) is not None, images))
     random.shuffle(images)
     images = images[:num_samples + num_validation]
-    num = num_samples + num_validation
 
     array = np.array(list(map(lambda x: re.findall(r"\/(.*?).jpg", x)[0].split("-"), images))).astype(np.float32)
     circumference, area = array[:, 0], array[:, 1]
     x = np.random.normal(0, 3, (num_samples + num_validation, 2)).astype(np.float32)
     x[:, 0] = x[:, 0] / scale + 3 * circumference
     betas = np.array(coefs)
-    images_targets = 2.7*(circumference + area * 5)
+    images_targets = 2.7 * (circumference + area * 5)
     p = sigmoid(np.matmul(x, betas) + images_targets)
-    labels = bernoulli.rvs(p = p).astype(np.int32)
+    labels = bernoulli.rvs(p=p).astype(np.int32)
 
     images_list = []
     vgg_list = []
     for img in images:
-        img_array = imread(img)[:,:,:3]
+        img_array = imread(img)[:, :, :3]
 
         images_list.append(img_array)
 
@@ -42,7 +42,21 @@ def load_data(coefs, scale, num_samples, num_validation):
     return train_image, train_label, valid_image, valid_label
 
 
+def get_next_batch(max_length, length, train_images, train_labels, test_images, test_labels, is_training=True):
+    """
+    extract next batch-images
+    Returns: batch sized BATCH
+    """
+    if is_training:
+        indicies = np.random.choice(max_length, length)
+        next_batch = train_images[indicies]
+        next_labels = train_labels[indicies]
+    else:
+        indicies = np.random.choice(max_length, length)
+        next_batch = test_images[indicies]
+        next_labels = test_labels[indicies]
 
-load_data((-2.0,-1.6), 1., 1000, 1000)
+    return np.array(next_batch), np.array(next_labels)
 
-    
+
+
