@@ -1,53 +1,57 @@
-#!/usr/bin/env python
-
-import matplotlib
-
-import sys
-import tensorflow as tf
-import _pickle as pickle
 import numpy as np
-import datetime
-import math
-import time
-import matplotlib.pyplot as plt
+import os
+import re
+import random
+from scipy.stats import bernoulli
+from PIL import Image
 
-import element as ele
-from VGG_structure.vgg16_build import *
 
-DATASET_NUM = 10000
-BATCH = 100
-EPOCH = 10
+def sigmoid(z):
+    a = 1 / (1 + np.exp(-z))
+    return a
 
-with tf.Session() as sess:
-    vgg = VGG16()
 
-    w = tf.Variable(tf.truncated_normal([512, 10], 0.0, 1.0) * 0.01, name='w_last')
-    b = tf.Variable(tf.truncated_normal([10], 0.0, 1.0) * 0.01, name='b_last')
+def load_data(coefs, scale, num_samples, num_validation):
+    images = [os.path.join("images", path) for path in os.listdir("images/")]
+    images = list(filter(lambda ima: re.match("images/.*?.jpg", ima) is not None, images))
+    random.shuffle(images)
+    images = images[:num_samples + num_validation]
 
-    input = tf.placeholder(tf.float32, [None, 32, 32, 3])
+    array = np.array(list(map(lambda x: re.findall(r"\/(.*?).jpg", x)[0].split("-"), images))).astype(np.float32)
+    circumference, area = array[:, 0], array[:, 1]
+    x = np.random.normal(0, 3, (num_samples + num_validation, 2)).astype(np.float32)
+    x[:, 0] = x[:, 0] / scale + 3 * circumference
+    betas = np.array(coefs)
+    images_targets = 2.7 * (circumference + area * 5)
+    p = sigmoid(np.matmul(x, betas) + images_targets)
+    labels = bernoulli.rvs(p=p).astype(np.int32)
 
-    fmap = vgg.build(input, True)
-    predict = tf.nn.softmax(tf.add(tf.matmul(fmap, w), b))
+    images_list = []
+    vgg_list = []
+    for img in images:
+        im = Image.open(img)
+        (x, y) = im.size
+        x_s, y_s = 32, 32
+        out = np.array(im.resize((x_s, y_s), Image.ANTIALIAS))
+        images_list.append(out)
 
-    # 这段没懂
-    ans = tf.placeholder(shape=None, dtype=tf.float32)
-    ans = tf.squeeze(tf.cast(ans, tf.float32))
+    image_array = np.array(images_list)
+    train_image = image_array[:num_samples]
+    train_label = np.array(labels[:num_samples])
+    valid_image = image_array[num_samples:]
+    valid_label = np.array(labels[num_samples:])
 
-    # 交叉熵
-    loss = tf.reduce_mean(-tf.reduce_sum(ans * tf.log(predict), reduction_indices=[1]))
-    optimizer = tf.train.GradientDescentOptimizer(0.05)
-    train_step = optimizer.minimize(loss)
+    return train_image, train_label, valid_image, valid_label
 
-    sess.run(tf.global_variables_initializer())
 
-    train_images, train_labels, test_images, test_labels = ele.load_data((-2.0, -1.6), 1., 1000, 1000)
+def get_next_batch(max_length, length, train_images, train_labels, test_images, test_labels, is_training=True):
+    if is_training:
+        indicies = np.random.choice(max_length, length)
+        next_batch = train_images[indicies]
+        next_labels = train_labels[indicies]
+    else:
+        indicies = np.random.choice(max_length, length)
+        next_batch = test_images[indicies]
+        next_labels = test_labels[indicies]
 
-    print('\nSTART LEARNING')
-    print('==================== ' + str(datetime.datetime.now()) + ' ====================')
-
-    lossbox = []
-    for e in range(EPOCH):
-        for b in range(math.ceil(DATASET_NUM/BATCH)):
-            batch, labels = ele.get_next_batch(len(train_labels), BATCH, train_images, train_labels, test_images, test_labels)
-
-            
+    return np.array(next_batch), np.array(next_labels)

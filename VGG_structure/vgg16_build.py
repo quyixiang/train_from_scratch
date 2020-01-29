@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 
 import tensorflow as tf
-import numpy as np
 from functools import reduce
 
 from . import vgg16_structure as vgg
-from . import activation
+from .activation import Activation
 
 
 class VGG16():
     def __init__(self):
         pass
-    def build(self,input, is_training = True):
+
+    def build(self, input, is_training=True):
 
         self.train_phase = tf.constant(is_training) if is_training else None
 
@@ -38,26 +38,25 @@ class VGG16():
         self.conv5_3 = self.convolution(self.conv5_2, 'conv5_3')
         self.pool5 = self.pooling(self.conv5_3, 'pool5')
 
-        self.fc6 = self.fully_connection(self.pool5, activation.Activation.relu, 'cifar')
+        self.fc6 = self.fully_connection(self.pool5, Activation.relu, 'cifar')
         # self.fc7 = self.fully_connection(self.fc6, Activation.relu, 'fc7')
         # self.fc8 = self.fully_connection(self.fc7, Activation.softmax, 'fc8')
 
         self.prob = self.fc6
         return self.prob
 
-
     def pooling(self, input, name):
-        return tf.nn.max_pool(input, ksize=vgg.ksize, strides=vgg.pool_strides, padding='SAME', name = name)
+        return tf.nn.max_pool(input, ksize=vgg.ksize, strides=vgg.pool_strides, padding='SAME', name=name)
 
-    def convolution(self,input, name):
-        print("Input size of the current layer is "+str(input.get_shape().as_list()))
+    def convolution(self, input, name):
+        print("Input size of the current layer is " + str(input.get_shape().as_list()))
 
         with tf.variable_scope(name):
-            size=vgg.structure[name]
-            kernel=self.get_weight(size[0],name="w_"+name)
-            bias=self.get_bias(size[1],name='b_'+name)
-            conv=tf.nn.conv2d(input,kernel,strides=vgg.conv_strides,padding='SAME', name=name)
-            out=tf.nn.relu(tf.add(conv,bias))
+            size = vgg.structure[name]
+            kernel = self.get_weight(size[0], name="w_" + name)
+            bias = self.get_bias(size[1], name='b_' + name)
+            conv = tf.nn.conv2d(input, kernel, strides=vgg.conv_strides, padding='SAME', name=name)
+            out = tf.nn.relu(tf.add(conv, bias))
 
         return self.batch_normalization(out)
 
@@ -78,11 +77,11 @@ class VGG16():
             fc = tf.nn.bias_add(tf.matmul(x, weights), biases)
             fc = activation(fc)
 
-            print('Input shape is: '+str(shape))
-            print('Total nuron count is: '+str(dim))
-            
+            print('Input shape is: ' + str(shape))
+            print('Total nuron count is: ' + str(dim))
+
             return self.batch_normalization(fc)
-            
+
     def batch_normalization(self, input, decay=0.9, eps=1e-5):
         """
         Batch Normalization
@@ -111,27 +110,17 @@ class VGG16():
             ema_apply_op = ema.apply([batch_mean, batch_var])
             with tf.control_dependencies([ema_apply_op]):
                 return tf.identity(batch_mean), tf.identity(batch_var)
+
         mean, var = tf.cond(self.train_phase, mean_var_with_update,
-          lambda: (ema.average(batch_mean), ema.average(batch_var)))
+                            lambda: (ema.average(batch_mean), ema.average(batch_var)))
 
         return tf.nn.batch_normalization(input, mean, var, beta, gamma, eps)
-        
-    def get_weight(self,shape,name):
 
-        initial=tf.truncated_normal(shape, 0.0, 1.0) * 0.01
-        return tf.Variable(initial,name='w_'+name)
-        
+    def get_weight(self, shape, name):
+
+        initial = tf.truncated_normal(shape, 0.0, 1.0) * 0.01
+        return tf.Variable(initial, name='w_' + name)
 
     def get_bias(self, shape, name):
 
-        return tf.Variable(tf.truncated_normal(shape,0.0,1.0)*0.01, name='b_'+name)
-
-
-
-
-
-
-
-
-
-
+        return tf.Variable(tf.truncated_normal(shape, 0.0, 1.0) * 0.01, name='b_' + name)
