@@ -39,6 +39,10 @@ class VGG16():
         self.pool5 = self.pooling(self.conv5_3, 'pool5')
 
         self.fc6 = self.fully_connection(self.pool5, Activation.relu, 'cifar')
+
+        print("*"*200)
+        print(self.fc6)
+
         # self.fc7 = self.fully_connection(self.fc6, Activation.relu, 'fc7')
         # self.fc8 = self.fully_connection(self.fc7, Activation.softmax, 'fc8')
 
@@ -61,10 +65,6 @@ class VGG16():
         return self.batch_normalization(out)
 
     def fully_connection(self, input, activation, name):
-        """
-        Args: output of just before layer
-        Return: fully_connected layer
-        """
         size = vgg.structure[name]
         with tf.variable_scope(name):
             shape = input.get_shape().as_list()
@@ -83,17 +83,6 @@ class VGG16():
             return self.batch_normalization(fc)
 
     def batch_normalization(self, input, decay=0.9, eps=1e-5):
-        """
-        Batch Normalization
-        Result in:
-            * Reduce DropOut
-            * Sparse Dependencies on Initial-value(e.g. weight, bias)
-            * Accelerate Convergence
-            * Enable to increase training rate
-
-        Args: output of convolution or fully-connection layer
-        Returns: Normalized batch
-        """
         shape = input.get_shape().as_list()
         n_out = shape[-1]
         beta = tf.Variable(tf.zeros([n_out]))
@@ -124,3 +113,4 @@ class VGG16():
     def get_bias(self, shape, name):
 
         return tf.Variable(tf.truncated_normal(shape, 0.0, 1.0) * 0.01, name='b_' + name)
+
