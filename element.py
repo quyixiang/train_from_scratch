@@ -46,8 +46,6 @@ def load_data(coefs, scale, num_samples, num_validation):
     return train_image, train_label, train_aug, valid_image, valid_label, valid_aug
 
 
-load_data((-2.0, -1.6), 1., 1000, 1000)
-
 
 def get_next_batch(max_length, length, train_images, train_labels, train_augs, test_images, test_labels, test_augs, is_training=True):
     if is_training:

@@ -24,7 +24,7 @@ with tf.Session() as sess:
     fmap = vgg.build(input, True)
 
     # 在famp这里加参数 famp=(?, 512) + aug=(?,2)
-    fmap_new = tf.concat([fmap, aug], axis=0)
+    fmap_new = tf.concat([fmap, aug], axis=1)
     print(fmap_new)
     predict = tf.nn.softmax(tf.add(tf.matmul(fmap_new, w), b))
     # predict = tf.nn.softmax(tf.stack([tf.add(tf.matmul(fmap, w), b), aug]))
