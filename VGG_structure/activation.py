@@ -1,10 +1,3 @@
-"""
-Enumeration class of tensorflow-activation methods
-
-date: 9/18
-author: arabian9ts
-"""
-
 import enum
 import tensorflow as tf
 

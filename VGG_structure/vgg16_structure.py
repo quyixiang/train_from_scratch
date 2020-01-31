@@ -1,11 +1,3 @@
-"""
-network-structure of vgg16 excludes fully-connection layer
-
-date: 9/17
-author: arabian9ts
-"""
-
-
 # structure of convolution and pooling layer up to fully-connection layer
 """
 size-format:
